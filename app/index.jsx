@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,12 @@ import {
   TextInput,
   ActivityIndicator,
   ScrollView,
+  TouchableOpacity
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useNavigation } from 'expo-router';
-import { Camera, CameraType } from 'expo-camera';
 
 export default function HomePage() {
   const [capturedImage, setCapturedImage] = useState(null);
@@ -24,7 +24,6 @@ export default function HomePage() {
   const [showStemInputs, setShowStemInputs] = useState(false);
   const [stemMeasurements, setStemMeasurements] = useState([]);
   const navigation = useNavigation();
-  
 
   useEffect(() => {
     const fetchSaveCount = async () => {
@@ -116,7 +115,6 @@ export default function HomePage() {
         setShowStemInputs(false);
         setStemMeasurements([]);
         setSaveCount((prevCount) => prevCount + 1);
-        navigation.navigate('explore');
       } catch (e) {
         console.log('Error saving data:', e);
       }
@@ -128,7 +126,9 @@ export default function HomePage() {
   return (
     <View style={styles.container}>
       <Text style={styles.saveCountText}>Number of saves: {saveCount}</Text>
-      <Button title="Add Data" onPress={openCamera} />
+      <TouchableOpacity style={styles.circleButton} onPress={openCamera}>
+        <Text style={styles.buttonText}>Add Data</Text>
+      </TouchableOpacity>
 
       {loadingLocation && <ActivityIndicator size="large" />}
 
@@ -136,47 +136,51 @@ export default function HomePage() {
         <ScrollView style={styles.formContainer}>
           <Image source={{ uri: capturedImage }} style={styles.image} />
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>No of stems:</Text>
-            <TextInput
-              style={styles.input}
-              value={numStems.toString()}
-              onChangeText={handleNumStemsChange}
-              placeholder="Enter number of stems"
-              keyboardType="numeric"
-            />
-          </View>
+          <View style={styles.formContent}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>No of stems:</Text>
+              <TextInput
+                style={styles.input}
+                value={numStems.toString()}
+                onChangeText={handleNumStemsChange}
+                placeholder="Enter number of stems"
+                keyboardType="numeric"
+              />
+            </View>
 
-          {!showStemInputs && (
-            <Button
-              title="Next"
-              onPress={() => setShowStemInputs(true)}
-              disabled={numStems === 0}
-            />
-          )}
+            {!showStemInputs && (
+              <Button
+                title="Next"
+                onPress={() => setShowStemInputs(true)}
+                disabled={numStems === 0}
+              />
+            )}
 
-          {showStemInputs && (
-            <>
-              {Array.from(Array(numStems).keys()).map((index) => (
-                <View key={index} style={styles.inputContainer}>
-                  <Text style={styles.label}>Stem {index + 1}:</Text>
-                  <TextInput
-                    style={styles.input}
-                    onChangeText={(text) => handleStemInputChange(index, text)}
-                    placeholder={`Enter measurement for stem ${index + 1}`}
-                    keyboardType="numeric"
-                  />
+            {showStemInputs && (
+              <>
+                {Array.from(Array(numStems).keys()).map((index) => (
+                  <View key={index} style={styles.inputContainer}>
+                    <Text style={styles.label}>Stem {index + 1}:</Text>
+                    <TextInput
+                      style={styles.input}
+                      onChangeText={(text) => handleStemInputChange(index, text)}
+                      placeholder={`Enter measurement for stem ${index + 1}`}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                ))}
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Location:</Text>
+                  <Text>{location.latitude}, {location.longitude}</Text>
                 </View>
-              ))}
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Location:</Text>
-                <Text>{location.latitude}, {location.longitude}</Text>
-              </View>
-
-              <Button title="Save Data" onPress={saveDataToStorage} />
-            </>
-          )}
+                <View style={styles.buttonContainer}> 
+                  <Button title="Save Data" onPress={saveDataToStorage} />
+                </View>
+              </>
+            )}
+          </View>
         </ScrollView>
       )}
     </View>
@@ -194,12 +198,18 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     marginVertical: 20,
+    width: '90%', 
+  },
+  formContent: {
+    width: '100%',
+    paddingBottom: 20, // Padding to ensure button visibility on scroll
   },
   image: {
     width: 200,
     height: 200,
     resizeMode: 'contain',
     marginBottom: 20,
+    alignSelf: 'center',
   },
   inputContainer: {
     marginBottom: 15,
@@ -207,17 +217,35 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     marginBottom: 5,
+    fontWeight: 'bold',
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     padding: 10,
     borderRadius: 5,
+    width: '100%', 
   },
   saveCountText: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 20,
     color: 'white',
+  },
+  circleButton: {
+    backgroundColor: '#007bff', 
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 14,
+  },
+  buttonContainer: { 
+    marginBottom: 20, 
   },
 });
