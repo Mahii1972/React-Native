@@ -10,12 +10,14 @@ import {
   ScrollView,
   TouchableOpacity,
   Appearance,
+  Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useNavigation } from 'expo-router';
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase';
+import { uploadImageToS3 } from '../lib/aws';
 
 export default function HomePage() {
   const [capturedImage, setCapturedImage] = useState(null);
@@ -25,6 +27,8 @@ export default function HomePage() {
   const [numStems, setNumStems] = useState(0);
   const [showStemInputs, setShowStemInputs] = useState(false);
   const [stemMeasurements, setStemMeasurements] = useState([]);
+  const [savingData, setSavingData] = useState(false); // State to track saving status
+  const [saveMessage, setSaveMessage] = useState(''); // State for success/error message
   const navigation = useNavigation();
 
   // Theme management
@@ -106,10 +110,16 @@ export default function HomePage() {
   const saveDataToStorage = async () => {
     if (capturedImage && numStems > 0 && stemMeasurements.length === numStems) {
       try {
+        setSavingData(true); // Show the spinner
+        setSaveMessage(''); // Clear previous message
+
         const existingDataString = await AsyncStorage.getItem('capturedData');
         const existingData = existingDataString
           ? JSON.parse(existingDataString)
           : [];
+
+        // Upload image to S3 using your imported function
+        const imageUrl = await uploadImageToS3(capturedImage); 
 
         const newData = [
           ...existingData,
@@ -117,33 +127,38 @@ export default function HomePage() {
             uri: capturedImage,
             stems: stemMeasurements,
             location: location,
+            imageUrl: imageUrl // Store the image URL
           },
         ];
 
         await AsyncStorage.setItem('capturedData', JSON.stringify(newData));
         console.log('Data saved successfully!');
 
-             // Add data to Supabase
-             try {
-              const { data, error } = await supabase
-                .from('stems')
-                .insert([{
-                  stems_no: numStems,
-                  stems_measure: stemMeasurements.map(Number),
-                  location: { 
-                    latitude: location.latitude,
-                    longitude: location.longitude 
-                  }    
-                }]);
+        // Add data to Supabase (with imageUrl)
+        try {
+          const { data, error } = await supabase
+            .from('stems')
+            .insert([{
+              stems_no: numStems,
+              stems_measure: stemMeasurements.map(Number),
+              location: { 
+                latitude: location.latitude,
+                longitude: location.longitude 
+              },
+              image_url: imageUrl  // Insert the image URL into the database
+            }]);
           if (error) {
             console.error('Error saving data to Supabase:', error);
+            setSaveMessage('Error saving data');
             // Handle error appropriately (e.g., show an error message)
           } else {
             console.log('Data saved to Supabase:', data);
+            setSaveMessage('Data successfully saved');
             // Update UI or perform other actions after successful save
           }
         } catch (e) {
           console.error('Error saving data to Supabase:', e);
+          setSaveMessage('Error saving data');
         }
 
         setCapturedImage(null);
@@ -154,6 +169,9 @@ export default function HomePage() {
         setSaveCount((prevCount) => prevCount + 1);
       } catch (e) {
         console.log('Error saving data:', e);
+        setSaveMessage('Error saving data');
+      } finally {
+        setSavingData(false); // Hide the spinner after saving or error
       }
     } else {
       alert(
@@ -251,6 +269,12 @@ export default function HomePage() {
           </View>
         </ScrollView>
       )}
+
+      {savingData && (
+        <View style={styles.spinnerContainer}>
+          <ActivityIndicator size="large" color="#007bff" />
+        </View>
+      )}
     </View>
   );
 }
@@ -313,5 +337,20 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginBottom: 20,
+  },
+  spinnerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveMessageText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
   },
 });
