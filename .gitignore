@@ -1,16 +1,19 @@
+# Ignore build artifacts and temporary files
 node_modules/
 .expo/
 dist/
 npm-debug.*
+web-build/
+
+# Ignore sensitive files
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
 *.orig.*
-web-build/
 
-# macOS
+# Ignore macOS-specific files
 .DS_Store
 
 # @generated expo-cli sync-2b81b286409207a5da26e14c78851eb30d8ccbdb
@@ -18,3 +21,9 @@ web-build/
 
 expo-env.d.ts
 # @end expo-cli
+
+# The .env files
+.env
+.env.development
+.env.staging
+.env.production

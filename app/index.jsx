@@ -8,12 +8,14 @@ import {
   TextInput,
   ActivityIndicator,
   ScrollView,
-  TouchableOpacity
+  TouchableOpacity,
+  Appearance,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useNavigation } from 'expo-router';
+import { supabase } from '../lib/supabase'
 
 export default function HomePage() {
   const [capturedImage, setCapturedImage] = useState(null);
@@ -25,11 +27,23 @@ export default function HomePage() {
   const [stemMeasurements, setStemMeasurements] = useState([]);
   const navigation = useNavigation();
 
+  // Theme management
+  const [theme, setTheme] = useState(Appearance.getColorScheme());
+
+  useEffect(() => {
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setTheme(colorScheme);
+    });
+    return () => subscription.remove();
+  }, []);
+
   useEffect(() => {
     const fetchSaveCount = async () => {
       try {
         const existingDataString = await AsyncStorage.getItem('capturedData');
-        const existingData = existingDataString ? JSON.parse(existingDataString) : [];
+        const existingData = existingDataString
+          ? JSON.parse(existingDataString)
+          : [];
         setSaveCount(existingData.length);
       } catch (e) {
         console.log('Error fetching save count:', e);
@@ -79,7 +93,7 @@ export default function HomePage() {
     if (!isNaN(numericValue)) {
       setNumStems(numericValue);
     } else {
-      setNumStems(0); // Reset if not a number
+      setNumStems(0);
     }
   };
 
@@ -109,6 +123,29 @@ export default function HomePage() {
         await AsyncStorage.setItem('capturedData', JSON.stringify(newData));
         console.log('Data saved successfully!');
 
+             // Add data to Supabase
+             try {
+              const { data, error } = await supabase
+                .from('stems')
+                .insert([{
+                  stems_no: numStems,
+                  stems_measure: stemMeasurements.map(Number),
+                  location: { 
+                    latitude: location.latitude,
+                    longitude: location.longitude 
+                  }    
+                }]);
+          if (error) {
+            console.error('Error saving data to Supabase:', error);
+            // Handle error appropriately (e.g., show an error message)
+          } else {
+            console.log('Data saved to Supabase:', data);
+            // Update UI or perform other actions after successful save
+          }
+        } catch (e) {
+          console.error('Error saving data to Supabase:', e);
+        }
+
         setCapturedImage(null);
         setLocation(null);
         setNumStems(0);
@@ -119,13 +156,17 @@ export default function HomePage() {
         console.log('Error saving data:', e);
       }
     } else {
-      alert('Please capture an image, enter stem count, and fill all stem measurements!');
+      alert(
+        'Please capture an image, enter stem count, and fill all stem measurements!'
+      );
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.saveCountText}>Number of saves: {saveCount}</Text>
+      <Text style={[styles.saveCountText, { color: theme === 'dark' ? 'white' : 'black' }]}>
+        Number of saves: {saveCount}
+      </Text>
       <TouchableOpacity style={styles.circleButton} onPress={openCamera}>
         <Text style={styles.buttonText}>Add Data</Text>
       </TouchableOpacity>
@@ -133,17 +174,31 @@ export default function HomePage() {
       {loadingLocation && <ActivityIndicator size="large" />}
 
       {location && capturedImage && (
-        <ScrollView style={styles.formContainer}>
+        <ScrollView
+          style={[
+            styles.formContainer,
+            { backgroundColor: theme === 'dark' ? '#333' : 'white' },
+          ]}
+        >
           <Image source={{ uri: capturedImage }} style={styles.image} />
 
           <View style={styles.formContent}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>No of stems:</Text>
+              <Text style={[styles.label, { color: theme === 'dark' ? 'white' : 'black' }]}>
+                No of stems:
+              </Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme === 'dark' ? '#444' : 'white',
+                    color: theme === 'dark' ? 'white' : 'black',
+                  },
+                ]}
                 value={numStems.toString()}
                 onChangeText={handleNumStemsChange}
                 placeholder="Enter number of stems"
+                placeholderTextColor={theme === 'dark' ? 'gray' : 'lightgray'}
                 keyboardType="numeric"
               />
             </View>
@@ -160,22 +215,35 @@ export default function HomePage() {
               <>
                 {Array.from(Array(numStems).keys()).map((index) => (
                   <View key={index} style={styles.inputContainer}>
-                    <Text style={styles.label}>Stem {index + 1}:</Text>
+                    <Text style={[styles.label, { color: theme === 'dark' ? 'white' : 'black' }]}>
+                      Stem {index + 1}:
+                    </Text>
                     <TextInput
-                      style={styles.input}
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: theme === 'dark' ? '#444' : 'white',
+                          color: theme === 'dark' ? 'white' : 'black',
+                        },
+                      ]}
                       onChangeText={(text) => handleStemInputChange(index, text)}
                       placeholder={`Enter measurement for stem ${index + 1}`}
+                      placeholderTextColor={theme === 'dark' ? 'gray' : 'lightgray'}
                       keyboardType="numeric"
                     />
                   </View>
                 ))}
 
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Location:</Text>
-                  <Text>{location.latitude}, {location.longitude}</Text>
+                  <Text style={[styles.label, { color: theme === 'dark' ? 'white' : 'black' }]}>
+                    Location:
+                  </Text>
+                  <Text style={{ color: theme === 'dark' ? 'white' : 'black' }}>
+                    {location.latitude}, {location.longitude}
+                  </Text>
                 </View>
 
-                <View style={styles.buttonContainer}> 
+                <View style={styles.buttonContainer}>
                   <Button title="Save Data" onPress={saveDataToStorage} />
                 </View>
               </>
@@ -194,15 +262,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   formContainer: {
-    backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
     marginVertical: 20,
-    width: '90%', 
+    width: '90%',
   },
   formContent: {
     width: '100%',
-    paddingBottom: 20, // Padding to ensure button visibility on scroll
+    paddingBottom: 20,
   },
   image: {
     width: 200,
@@ -224,16 +291,15 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     padding: 10,
     borderRadius: 5,
-    width: '100%', 
+    width: '100%',
   },
   saveCountText: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: 'white',
   },
   circleButton: {
-    backgroundColor: '#007bff', 
+    backgroundColor: '#007bff',
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -245,7 +311,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
   },
-  buttonContainer: { 
-    marginBottom: 20, 
+  buttonContainer: {
+    marginBottom: 20,
   },
 });
