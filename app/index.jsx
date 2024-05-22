@@ -78,8 +78,6 @@ export default function HomePage() {
   };
 
   const openCamera = async () => {
-    await getGPSLocation();
-
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     if (permissionResult.granted === false) {
       alert('Permission to access camera roll is required!');
@@ -89,6 +87,7 @@ export default function HomePage() {
     const cameraResult = await ImagePicker.launchCameraAsync();
     if (!cameraResult.canceled) {
       setCapturedImage(cameraResult.assets[0].uri);
+      await getGPSLocation();
     }
   };
 
