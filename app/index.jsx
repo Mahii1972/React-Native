@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,9 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from 'expo-router';
-import { useImage } from './context/ImageContext'; 
+import { useImage } from './context/ImageContext';
+import { useFocusEffect } from '@react-navigation/native';
+import SyncIcon from '../components/custom/SyncIcon';
 
 export default function HomePage() {
   const [saveCount, setSaveCount] = useState(0);
@@ -28,20 +30,22 @@ export default function HomePage() {
     return () => subscription.remove();
   }, []);
 
-  useEffect(() => {
-    const fetchSaveCount = async () => {
-      try {
-        const existingDataString = await AsyncStorage.getItem('capturedData');
-        const existingData = existingDataString
-          ? JSON.parse(existingDataString)
-          : [];
-        setSaveCount(existingData.length);
-      } catch (e) {
-        console.log('Error fetching save count:', e);
-      }
-    };
-    fetchSaveCount();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchSaveCount = async () => {
+        try {
+          const existingDataString = await AsyncStorage.getItem('capturedData');
+          const existingData = existingDataString
+            ? JSON.parse(existingDataString)
+            : [];
+          setSaveCount(existingData.length);
+        } catch (e) {
+          console.log('Error fetching save count:', e);
+        }
+      };
+      fetchSaveCount();
+    }, [])
+  );
 
   const openCamera = async () => {
     setLoading(true)
@@ -64,8 +68,9 @@ export default function HomePage() {
       {loading &&  <ActivityIndicator size="large" />}
 
       <Text style={[styles.saveCountText, { color: theme === 'dark' ? 'white' : 'black' }]}>
-        Number of saves: {saveCount}
+        Number of offline saves: {saveCount}
       </Text>
+      <SyncIcon />
       <TouchableOpacity style={styles.circleButton} onPress={openCamera}>
         <Text style={styles.buttonText}>Add Data</Text>
       </TouchableOpacity>
@@ -86,12 +91,17 @@ const styles = StyleSheet.create({
   },
   circleButton: {
     backgroundColor: '#007bff',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   buttonText: {
     color: 'white',

@@ -17,6 +17,7 @@ import { useImage } from './context/ImageContext'; // Import useImage
 import { supabase } from '../lib/supabase';
 import { uploadImageToS3 } from '../lib/aws';
 import { useNavigation } from 'expo-router';
+import NetInfo from '@react-native-community/netinfo';
 
 export default function Preview() {
   const { imageUri } = useImage(); // Access the imageUri
@@ -82,34 +83,19 @@ export default function Preview() {
 
   const saveDataToStorage = async () => {
     if (imageUri && numStems > 0 && stemMeasurements.length === numStems) {
-      try {
-        setSavingData(true);
-        setSaveMessage('');
+      setSavingData(true);
+      setSaveMessage('');
 
-        const existingDataString = await AsyncStorage.getItem('capturedData');
-        const existingData = existingDataString
-          ? JSON.parse(existingDataString)
-          : [];
+      // Check network connectivity
+      const isConnected = await NetInfo.fetch().then(state => state.isConnected);
 
-        // Upload image to S3
-        const imageUrl = await uploadImageToS3(imageUri);
-
-        const newData = [
-          ...existingData,
-          {
-            uri: imageUri,
-            stems: stemMeasurements,
-            location: location,
-            imageUrl: imageUrl,
-          },
-        ];
-
-        await AsyncStorage.setItem('capturedData', JSON.stringify(newData));
-        console.log('Data saved successfully!');
-
-        // Add data to Supabase (with imageUrl)
+      if (isConnected) {
         try {
-          const { data, error } = await supabase
+          // Upload image to S3
+          const imageUrl = await uploadImageToS3(imageUri);
+
+          // Add data to Supabase (with imageUrl)
+          const { error } = await supabase
             .from('stems')
             .insert([
               {
@@ -122,43 +108,66 @@ export default function Preview() {
                 image_url: imageUrl,
               },
             ]);
+
           if (error) {
             console.error('Error saving data to Supabase:', error);
             setSaveMessage('Error saving data');
+            throw error; // Re-throw to handle in catch block
           } else {
-            console.log('Data saved to Supabase:', data);
-            setSaveMessage('Data successfully saved');
+            console.log('Data saved to Supabase successfully!');
           }
-        } catch (e) {
-          console.error('Error saving data to Supabase:', e);
+        } catch (error) {
+          console.error('Error saving data:', error);
+          setSaveMessage('Error saving data');
+          Alert.alert('Network Error', 'Please sync the stored data later.', [
+            { text: 'OK', onPress: () => navigation.navigate('index') },
+          ]);
+          return; // Stop further processing if online save fails
+        } 
+      } else {
+        // Save data to AsyncStorage for offline storage
+        try {
+          const existingDataString = await AsyncStorage.getItem('capturedData');
+          const existingData = existingDataString
+            ? JSON.parse(existingDataString)
+            : [];
+
+          const newData = [
+            ...existingData,
+            {
+              uri: imageUri,
+              stems: stemMeasurements,
+              location: location,
+              // Don't upload image to S3 here, save locally
+            },
+          ];
+
+          await AsyncStorage.setItem('capturedData', JSON.stringify(newData));
+          console.log('Data saved to AsyncStorage successfully!');
+        } catch (error) {
+          console.error('Error saving data to AsyncStorage:', error);
           setSaveMessage('Error saving data');
         }
-
-        // Reset the form (optional, you can modify as needed)
-        setNumStems(0);
-        setShowStemInputs(false);
-        setStemMeasurements([]);
-
-        Alert.alert('Success', 'Data saved successfully!', [
-          { 
-            text: 'OK', 
-            onPress: () => {
-              console.log('OK Pressed');
-              navigation.navigate('index'); 
-            } 
-          },
+        Alert.alert('Network Error', 'Data saved offline. Please sync later.', [
+          { text: 'OK', onPress: () => navigation.navigate('index') },
         ]);
-      } catch (e) {
-        console.log('Error saving data:', e);
-        setSaveMessage('Error saving data');
-      } finally {
-        setSavingData(false);
+        return; // Stop further processing if offline save is done
       }
+
+      // Reset the form and show success message if data is saved online or offline
+      setNumStems(0);
+      setShowStemInputs(false);
+      setStemMeasurements([]);
+      setSaveMessage('Data saved successfully!'); 
+      Alert.alert('Success', 'Data saved successfully!', [
+        { text: 'OK', onPress: () => navigation.navigate('index') },
+      ]);
     } else {
       alert(
         'Please capture an image, enter stem count, and fill all stem measurements!'
       );
     }
+    setSavingData(false);
   };
 
   if (!imageUri) {

@@ -11,7 +11,6 @@
       "image": "./assets/images/logo.jpg",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
-      
     },
     "ios": {
       "supportsTablet": true
@@ -39,8 +38,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "7b00fea7-9341-4496-a4b0-14578e34741c"
+        "projectId": "07dbc51c-3384-4ffc-8e5d-ce6ead5d0cc8"
       }
-    }
+    },
+    "owner": "carl_sagan"
   }
 }
