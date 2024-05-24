@@ -68,7 +68,7 @@ export default function HomePage() {
       {loading &&  <ActivityIndicator size="large" />}
 
       <Text style={[styles.saveCountText, { color: theme === 'dark' ? 'white' : 'black' }]}>
-        Number of offline saves: {saveCount}
+      Awaiting Synchronization: {saveCount}
       </Text>
       <SyncIcon />
       <TouchableOpacity style={styles.circleButton} onPress={openCamera}>
@@ -90,21 +90,26 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   circleButton: {
-    backgroundColor: '#007bff',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    margin: 12,
+    height: 50,
+    width: 120,
+    borderRadius: 10,
+    backgroundColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 5,
+      height: 5,
+    },
+    shadowOpacity: 0.8,
+    shadowRadius: 15,
+    elevation: 10,
   },
   buttonText: {
-    color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 14,
+    color: 'rgb(161, 161, 161)',
   },
 });
+
+
