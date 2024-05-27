@@ -89,25 +89,31 @@ export default function Preview() {
       // Check network connectivity
       const isConnected = await NetInfo.fetch().then(state => state.isConnected);
 
+      // Get device ID and current date
+      const deviceId = await AsyncStorage.getItem('device_id');
+      const currentDate = new Date().toISOString();
+
       if (isConnected) {
         try {
           // Upload image to S3
           const imageUrl = await uploadImageToS3(imageUri);
 
-          // Add data to Supabase (with imageUrl)
-          const { error } = await supabase
-            .from('stems')
-            .insert([
-              {
-                stems_no: numStems,
-                stems_measure: stemMeasurements.map(Number),
-                location: {
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                },
-                image_url: imageUrl,
-              },
-            ]);
+// Add data to Supabase (with imageUrl, deviceId, and currentDate)
+const { error } = await supabase
+  .from('stems')
+  .insert([
+    {
+      stems_no: numStems,
+      stems_measure: stemMeasurements.map(Number),
+      location: {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      },
+      image_url: imageUrl,
+      device_id: deviceId,
+      date: new Date(), // Use new Date() to get the current timestamp
+    },
+  ]);
 
           if (error) {
             console.error('Error saving data to Supabase:', error);
@@ -132,15 +138,17 @@ export default function Preview() {
             ? JSON.parse(existingDataString)
             : [];
 
-          const newData = [
-            ...existingData,
-            {
-              uri: imageUri,
-              stems: stemMeasurements,
-              location: location,
-              // Don't upload image to S3 here, save locally
-            },
-          ];
+            const newData = [
+              ...existingData,
+              {
+                uri: imageUri,
+                stems: stemMeasurements,
+                location: location,
+                device_id: deviceId,
+                date: new Date(), // Use new Date() to get the current timestamp
+                // Don't upload image to S3 here, save locally
+              },
+            ];
 
           await AsyncStorage.setItem('capturedData', JSON.stringify(newData));
           console.log('Data saved to AsyncStorage successfully!');
@@ -148,7 +156,7 @@ export default function Preview() {
           console.error('Error saving data to AsyncStorage:', error);
           setSaveMessage('Error saving data');
         }
-        Alert.alert('Network Error', 'Data saved offline. Please sync later.', [
+        Alert.alert('Success', 'Data saved offline.', [
           { text: 'OK', onPress: () => navigation.navigate('index') },
         ]);
         return; // Stop further processing if offline save is done

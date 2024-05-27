@@ -27,3 +27,6 @@ expo-env.d.ts
 .env.development
 .env.staging
 .env.production
+
+eas.json
+
