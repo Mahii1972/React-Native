@@ -124,19 +124,23 @@ export default function HomePage() {
 
   return (
     <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" color="#0000ff" />}
+      <View style={styles.header}>
+        <View>
+          <Text style={[styles.countText, { color: theme === 'dark' ? 'white' : 'black' }]}>
+            Total: {totalCount}
+          </Text>
+          <Text style={[styles.countText, { color: theme === 'dark' ? 'white' : 'black' }]}>
+            Pending: {saveCount}
+          </Text>
+        </View>
+        <TouchableOpacity style={styles.circleButton} onPress={resetDeviceId}>
+          <Text style={styles.buttonText}>Reset ID</Text>
+        </TouchableOpacity>
+      </View>
 
-      <Text style={[styles.countText, { color: theme === 'dark' ? 'white' : 'black' }]}>
-        Total: {totalCount}
-      </Text>
-      <Text style={[styles.countText, { color: theme === 'dark' ? 'white' : 'black' }]}>
-        Pending: {saveCount}
-      </Text>
+      {loading && <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />}
       <TouchableOpacity style={styles.circleButton} onPress={openCamera}>
         <Text style={styles.buttonText}>Add Data</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.circleButton} onPress={resetDeviceId}>
-        <Text style={styles.buttonText}>Reset ID</Text>
       </TouchableOpacity>
     </View>
   );
@@ -145,13 +149,25 @@ export default function HomePage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'center', // This centers vertically within the available space
     alignItems: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    padding: 20,
+    position: 'absolute', // Take the header out of the normal layout flow
+    top: 20, // Adjust this value for the desired margin from the top
+    left: 0, 
   },
   countText: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+  },
+  resetText: {
+    fontSize: 16,
   },
   circleButton: {
     margin: 12,
@@ -173,5 +189,12 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     color: 'rgb(161, 161, 161)',
+  },
+  loader: {
+    position: 'absolute', 
+    top: '50%',
+    left: '50%',
+    marginLeft: -20, // Adjust for indicator size
+    marginTop: -20, // Adjust for indicator size
   },
 });

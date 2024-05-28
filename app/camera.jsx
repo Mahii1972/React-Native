@@ -37,7 +37,7 @@ export default function CameraScreen() {
   const takePicture = async () => {
     if (cameraRef.current) {
       const options = {
-        quality: 0.5, // Adjust the quality between 0 and 1
+        quality: 0.35, // Adjust the quality between 0 and 1
       };
   
       const photo = await cameraRef.current.takePictureAsync(options);

@@ -26,7 +26,7 @@ export default async function syncData() {
 
         // 2. Bulk Upload Images to S3
         const imageUrisToUpload = existingData
-          .filter(item => !item.imageUrl) 
+          .filter(item => item.uri && !item.imageUrl) // Filter out items with null or undefined uri
           .map(item => item.uri);
 
         if (imageUrisToUpload.length > 0) {
@@ -36,7 +36,7 @@ export default async function syncData() {
             // Update existingData with uploaded image URLs
             let imageUrlIndex = 0;
             for (let i = 0; i < existingData.length; i++) {
-              if (!existingData[i].imageUrl) {
+              if (existingData[i].uri && !existingData[i].imageUrl) {
                 existingData[i].imageUrl = uploadedImageUrls[imageUrlIndex];
                 imageUrlIndex++;
               }
@@ -58,7 +58,7 @@ export default async function syncData() {
               latitude: item.location.latitude,
               longitude: item.location.longitude,
             },
-            image_url: item.imageUrl, 
+            image_url: item.imageUrl || null, // Use null if imageUrl is undefined
             date: item.date, 
             device_id: item.device_id,
           }));

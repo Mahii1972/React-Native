@@ -24,7 +24,7 @@ export default function Preview() {
   const { imageUri, setImageUri } = useImage();
   const [location, setLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
-  const [numStems, setNumStems] = useState(0);
+  const [numStems, setNumStems] = useState('');
   const [showStemInputs, setShowStemInputs] = useState(false);
   const [stemMeasurements, setStemMeasurements] = useState([]);
   const [savingData, setSavingData] = useState(false);
@@ -68,10 +68,10 @@ export default function Preview() {
 
   const handleNumStemsChange = (text) => {
     const numericValue = parseInt(text, 10);
-    if (!isNaN(numericValue)) {
+    if (!isNaN(numericValue) && numericValue > 0) {
       setNumStems(numericValue);
     } else {
-      setNumStems(0);
+      setNumStems('');
     }
   };
 
@@ -212,10 +212,10 @@ export default function Preview() {
   
           {!showStemInputs && (
             <Button
-              title="Next"
-              onPress={() => setShowStemInputs(true)}
-              disabled={numStems === 0}
-            />
+  title="Next"
+  onPress={() => setShowStemInputs(true)}
+  disabled={numStems === '' || numStems === 0}
+/>
           )}
   
           {showStemInputs && (
