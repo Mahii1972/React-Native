@@ -109,17 +109,7 @@ export default function HomePage() {
 
   const openCamera = async () => {
     setLoading(true);
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    if (permissionResult.granted === false) {
-      alert('Permission to access camera roll is required!');
-      return;
-    }
-
-    const cameraResult = await ImagePicker.launchCameraAsync();
-    if (!cameraResult.canceled) {
-      setImageUri(cameraResult.assets[0].uri);
-      navigation.navigate('preview'); // Navigate to Preview
-    }
+    navigation.navigate('camera'); 
     setLoading(false);
   };
 

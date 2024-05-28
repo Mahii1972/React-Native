@@ -13,14 +13,15 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import { useImage } from './context/ImageContext'; // Import useImage
+import { useImage } from './context/ImageContext'; 
 import { supabase } from '../lib/supabase';
 import { uploadImageToS3 } from '../lib/aws';
 import { useNavigation } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 
+
 export default function Preview() {
-  const { imageUri } = useImage(); // Access the imageUri
+  const { imageUri, setImageUri } = useImage();
   const [location, setLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [numStems, setNumStems] = useState(0);
@@ -29,8 +30,8 @@ export default function Preview() {
   const [savingData, setSavingData] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const navigation = useNavigation();
+  
 
-  // Theme management
   const [theme, setTheme] = useState(Appearance.getColorScheme());
 
   useEffect(() => {
@@ -41,7 +42,6 @@ export default function Preview() {
   }, []);
 
   useEffect(() => {
-    // Get location when the component mounts
     getGPSLocation();
   }, []);
 
@@ -82,43 +82,39 @@ export default function Preview() {
   };
 
   const saveDataToStorage = async () => {
-    if (imageUri && numStems > 0 && stemMeasurements.length === numStems) {
+    if ((imageUri || !imageUri) && numStems > 0 && stemMeasurements.length === numStems) {
       setSavingData(true);
       setSaveMessage('');
 
-      // Check network connectivity
       const isConnected = await NetInfo.fetch().then(state => state.isConnected);
-
-      // Get device ID and current date
       const deviceId = await AsyncStorage.getItem('device_id');
       const currentDate = new Date().toISOString();
 
       if (isConnected) {
         try {
-          // Upload image to S3
-          const imageUrl = await uploadImageToS3(imageUri);
+          // Upload image only if imageUri is available
+          const imageUrl = imageUri ? await uploadImageToS3(imageUri) : null; 
 
-// Add data to Supabase (with imageUrl, deviceId, and currentDate)
-const { error } = await supabase
-  .from('stems')
-  .insert([
-    {
-      stems_no: numStems,
-      stems_measure: stemMeasurements.map(Number),
-      location: {
-        latitude: location.latitude,
-        longitude: location.longitude,
-      },
-      image_url: imageUrl,
-      device_id: deviceId,
-      date: new Date(), // Use new Date() to get the current timestamp
-    },
-  ]);
+          const { error } = await supabase
+            .from('stems')
+            .insert([
+              {
+                stems_no: numStems,
+                stems_measure: stemMeasurements.map(Number),
+                location: {
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                },
+                image_url: imageUrl, // Use the uploaded image URL or null
+                device_id: deviceId,
+                date: new Date(), 
+              },
+            ]);
 
           if (error) {
             console.error('Error saving data to Supabase:', error);
             setSaveMessage('Error saving data');
-            throw error; // Re-throw to handle in catch block
+            throw error; 
           } else {
             console.log('Data saved to Supabase successfully!');
           }
@@ -128,27 +124,25 @@ const { error } = await supabase
           Alert.alert('Network Error', 'Please sync the stored data later.', [
             { text: 'OK', onPress: () => navigation.navigate('index') },
           ]);
-          return; // Stop further processing if online save fails
-        } 
+          return; 
+        }
       } else {
-        // Save data to AsyncStorage for offline storage
         try {
           const existingDataString = await AsyncStorage.getItem('capturedData');
           const existingData = existingDataString
             ? JSON.parse(existingDataString)
             : [];
 
-            const newData = [
-              ...existingData,
-              {
-                uri: imageUri,
-                stems: stemMeasurements,
-                location: location,
-                device_id: deviceId,
-                date: new Date(), // Use new Date() to get the current timestamp
-                // Don't upload image to S3 here, save locally
-              },
-            ];
+          const newData = [
+            ...existingData,
+            {
+              uri: imageUri, // Store imageUri locally if available
+              stems: stemMeasurements,
+              location: location,
+              device_id: deviceId,
+              date: new Date(),
+            },
+          ];
 
           await AsyncStorage.setItem('capturedData', JSON.stringify(newData));
           console.log('Data saved to AsyncStorage successfully!');
@@ -159,37 +153,32 @@ const { error } = await supabase
         Alert.alert('Success', 'Data saved offline.', [
           { text: 'OK', onPress: () => navigation.navigate('index') },
         ]);
-        return; // Stop further processing if offline save is done
+        return; 
       }
 
-      // Reset the form and show success message if data is saved online or offline
       setNumStems(0);
       setShowStemInputs(false);
       setStemMeasurements([]);
-      setSaveMessage('Data saved successfully!'); 
+      setSaveMessage('Data saved successfully!');
+      setImageUri(null);
       Alert.alert('Success', 'Data saved successfully!', [
         { text: 'OK', onPress: () => navigation.navigate('index') },
       ]);
     } else {
       alert(
-        'Please capture an image, enter stem count, and fill all stem measurements!'
+        'Please capture an image (optional), enter stem count, and fill all stem measurements!'
       );
     }
     setSavingData(false);
+    
   };
-
-  if (!imageUri) {
-    return (
-      <View style={styles.container}>
-        <Text>No image selected.</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme === 'dark' ? '#333' : 'white' }]}>
       {loadingLocation && <ActivityIndicator size="large" />}
-      {imageUri && (
+
+      {/* Conditionally render image preview */}
+      {imageUri && ( 
         <View style={styles.imageContainer}>
           <Image source={{ uri: imageUri }} style={styles.image} />
         </View>
