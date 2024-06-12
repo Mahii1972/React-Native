@@ -6,7 +6,6 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { ImageProvider } from './context/ImageContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { registerBackgroundSync } from '../utils/syncData';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -22,10 +21,6 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  useEffect(() => {
-    registerBackgroundSync();
-  }, []);
-
   if (!loaded) {
     return null;
   }
@@ -39,6 +34,7 @@ export default function RootLayout() {
           <Stack.Screen name="preview" options={{ headerShown: false }} />
           <Stack.Screen name="id" options={{ headerShown: false }} />
           <Stack.Screen name="camera" options={{ headerShown: false }} />
+          <Stack.Screen name="map" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
       </ImageProvider>

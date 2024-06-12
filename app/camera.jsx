@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useImage } from './context/ImageContext'; // Assuming you have ImageContext defined
@@ -12,6 +12,10 @@ export default function CameraScreen() {
   const navigation = useNavigation();
   const { setImageUri } = useImage();
   const [capturedImage, setCapturedImage] = useState(null);
+
+  useEffect(() => {
+    requestPermission();
+  }, []);
 
   if (!permission) {
     return <View />;

@@ -15,6 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import syncData from '../components/custom/SyncIcon';
 import { supabase } from '../lib/supabase';
 import NetInfo from '@react-native-community/netinfo';
+import { Ionicons } from '@expo/vector-icons'; // Add this import
 
 export default function HomePage() {
   const [saveCount, setSaveCount] = useState(0);
@@ -125,6 +126,9 @@ export default function HomePage() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.navigate('map')}>
+          <Ionicons name="location-outline" size={24} color={theme === 'dark' ? 'white' : 'black'} />
+        </TouchableOpacity>
         <View>
           <Text style={[styles.countText, { color: theme === 'dark' ? 'white' : 'black' }]}>
             Total: {totalCount}
